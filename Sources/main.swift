@@ -93,7 +93,8 @@ struct Store {
             guard code == SQLITE_DONE else { throw StoreError.unavailable("T3 Code verileri şu an okunamıyor.") }
             return rows
         }
-        // Latest durable run per thread, across ALL projects. Never read message contents.
+        // Live activity takes priority over newer cancelled/queued requests.
+        // Fall back to the latest run when no active work remains.
         let threads = try query("""
         SELECT t.thread_id AS id,t.title,t.payload_json,
                COALESCE(r.status,'idle') AS status,r.requested_at,r.completed_at,
@@ -109,7 +110,10 @@ struct Store {
         LEFT JOIN projection_projects p ON p.project_id=t.project_id
         LEFT JOIN orchestration_v2_projection_runs r ON r.run_id=(
           SELECT rr.run_id FROM orchestration_v2_projection_runs rr
-          WHERE rr.thread_id=t.thread_id ORDER BY rr.ordinal DESC LIMIT 1)
+          WHERE rr.thread_id=t.thread_id
+          ORDER BY CASE WHEN rr.status IN ('preparing','starting','running','waiting') THEN 0
+                        WHEN rr.status='queued' THEN 1 ELSE 2 END,
+                   rr.ordinal DESC LIMIT 1)
         WHERE t.deleted_at IS NULL AND t.archived_at IS NULL
         ORDER BY t.updated_at DESC
         """)

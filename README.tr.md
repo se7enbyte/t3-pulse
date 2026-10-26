@@ -7,6 +7,7 @@ macOS menü çubuğunda T3 Code ajanlarını ve işlerini gösterir.
 - İkona tıklayınca tüm projelerin iş başlıkları, ajan modelleri, durumları ve süreleri açılır.
 - İki saniyede bir yenilenir. Dock'ta görünmez. İsteğe bağlı tamamlanma sesi vardır.
 - T3 Code kapalıysa son bilinen durum olarak işaretlenir.
+- Aynı sohbette daha yeni bir istek iptal edilse bile devam eden iş öncelikli gösterilir.
 
 ## Kurulum
 

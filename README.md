@@ -18,7 +18,7 @@ About 400 lines of Swift, using AppKit, SwiftUI, and the system SQLite library. 
 
 The menu bar shows counts by state. Click it for job titles, agent models, elapsed times, and native subagents across your local projects. Status refreshes every two seconds. Recent results cover the last 24 hours; archived threads and settled, inactive threads are excluded. A completion sound is optional and off by default. No Dock icon or automatic launch-at-login setup.
 
-“Completed” means the latest agent run finished, rather than a guarantee that every project requirement is done.
+Active runs take priority over newer queued or finished requests in the same thread. When no active work remains, the latest request determines the state. “Completed” means an agent run finished, rather than a guarantee that every project requirement is done.
 
 ## Build and run
 

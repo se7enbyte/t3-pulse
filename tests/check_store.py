@@ -40,6 +40,15 @@ with tempfile.TemporaryDirectory(prefix="t3pulse-check-") as root:
     assert "working\tlive" in output and "completed\tdone" in output
     assert "Native child" in output and "archived" not in output
     assert "OK: 3 iş" in output, output
+    # A newer request can finish/cancel while an older run is still working.
+    # T3's live activity must win over the highest run ordinal.
+    for newer_state in ("cancelled", "failed", "completed", "queued"):
+        run("live",3,newer_state)
+        assert "working\tlive" in check(), f"Newer {newer_state} request hid active work"
+        db.execute("UPDATE orchestration_v2_projection_runs SET status='waiting' WHERE run_id='live-2'")
+        assert "waiting\tlive" in check(), f"Newer {newer_state} request hid waiting work"
+        db.execute("UPDATE orchestration_v2_projection_runs SET status='running' WHERE run_id='live-2'")
+        db.execute("DELETE FROM orchestration_v2_projection_runs WHERE run_id='live-3'")
     db.execute("INSERT INTO orchestration_v2_projection_runtime_requests VALUES(?,?,?,?)", ("live","pending","exec_command_approval","{}"))
     assert "waiting\tlive" in check()
     db.execute("DELETE FROM orchestration_v2_projection_runtime_requests")
@@ -50,5 +59,9 @@ with tempfile.TemporaryDirectory(prefix="t3pulse-check-") as root:
     db.execute("DELETE FROM orchestration_v2_projection_runtime_requests")
     db.execute("UPDATE orchestration_v2_projection_runs SET status='completed',completed_at=? WHERE run_id='live-2'",(now,))
     assert "completed\tlive" in check()
+    run("live",3,"cancelled")
+    assert "stopped\tlive" in check(), "Without active work, use the latest request"
+    run("live",4,"queued")
+    assert "working\tlive" in check(), "Queued work must still appear"
     db.close()
-    print("PASS: latest run, completion transition, approvals, blocking/nonblocking input, archive filter, native subagent, child deduplication.")
+    print("PASS: active-run priority, terminal fallback, queued work, completion transition, approvals, blocking/nonblocking input, archive filter, native subagent, child deduplication.")
